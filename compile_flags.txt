@@ -1,0 +1,4 @@
+-I.
+-Isrc/include
+-Wall
+-Wextra
