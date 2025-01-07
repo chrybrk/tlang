@@ -75,9 +75,9 @@
 #define formate_string(...) ({ __formate_string_function__(__VA_ARGS__, NULL); })
 
 // log-system
-#define INFO(...) printf("%s[INFO]:%s %s\n", get_term_color(TEXT, GREEN), get_term_color(RESET, 0), string_cstr(formate_string(__VA_ARGS__)))
-#define WARN(...) printf("%s[WARN]:%s %s\n", get_term_color(TEXT, YELLOW), get_term_color(RESET, 0), string_cstr(formate_string(__VA_ARGS__)))
-#define ERROR(...) printf("%s[ERROR]:%s %s\n", get_term_color(TEXT, RED), get_term_color(RESET, 0), string_cstr(formate_string(__VA_ARGS__))), exit(1);
+#define INFO(...) printf("%s[BUILD :: INFO]:%s %s\n", get_term_color(TEXT, GREEN), get_term_color(RESET, 0), string_cstr(formate_string(__VA_ARGS__)))
+#define WARN(...) printf("%s[BUILD :: WARN]:%s %s\n", get_term_color(TEXT, YELLOW), get_term_color(RESET, 0), string_cstr(formate_string(__VA_ARGS__)))
+#define ERROR(...) printf("%s[BUILD :: ERROR]:%s %s\n", get_term_color(TEXT, RED), get_term_color(RESET, 0), string_cstr(formate_string(__VA_ARGS__))), exit_build_system(1);
 
 typedef enum {
 	BLACK 	= 0,
@@ -137,23 +137,7 @@ extern const char *build_source;
 extern const char *build_bin;
 
 // warn for non-freed arrays 
-static inline void incr_ac(void)
-{
-	static int array_init_counter = 0;
-	array_init_counter++;
-}
-
-static inline void decr_ac(void)
-{
-	static int array_init_counter = 0;
-	array_init_counter--;
-}
-
-static inline int get_ac(void)
-{
-	static int array_init_counter = 0;
-	return array_init_counter;
-}
+static int array_allocated_counter = 0;
 
 // color for logging
 const char *get_term_color(TERM_KIND kind, TERM_COLOR color);
@@ -389,8 +373,7 @@ array_T *init_array(size_t item_size)
 	}
 
 	array->index = 0;
-
-	incr_ac();
+	array_allocated_counter++;
 
 	return array;
 }
@@ -428,8 +411,8 @@ void array_free(array_T *array)
 {
 	if (array->buffer)
 	{
-		decr_ac();
 		free(array->buffer);
+		array_allocated_counter--;
 	}
 }
 
@@ -742,6 +725,17 @@ bool binary_test(string_T *binary_path, array_T *source_list)
 	return false;
 }
 
+void exit_build_system(int status_code)
+{
+	if (array_allocated_counter > 0)
+		WARN("You haven't freed %d array, which may result in memory leaks.", array_allocated_counter);
+
+	free(build_main_arena->buffer);
+	free(build_main_arena);
+
+	exit(status_code);
+}
+
 // main entry
 int main(int argc, char **argv)
 {
@@ -763,14 +757,7 @@ int main(int argc, char **argv)
 
 	build_start(argc, argv);
 
-	if (get_ac() > 0)
-		WARN("You haven't freed %d array, which may result in memory leaks.", get_ac());
-
-	free(build_main_arena->buffer);
-	free(build_main_arena);
-
-
-	return 0;
+	exit_build_system(0);
 }
 
 #endif // IMPLEMENT_BUILD_H

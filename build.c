@@ -26,9 +26,9 @@ void build_start(int argc, char **argv)
 			)
 	);
 
+	array_free(source_files);
+
 	if (!status)
 		(void)command_execute(formate_string("exec %s", string_cstr(bin)));
 	else ERROR("failed to compile.");
-
-	// array_free(source_files);
 }
