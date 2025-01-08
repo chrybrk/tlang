@@ -11,7 +11,7 @@ int main(void)
 	token_T *tok;
 	while ((tok = next_token(lexer))->type != TT_EOF)
 	{
-		printf("%d, %s\n", tok->type, tok->value.vs);
+		token_show(tok);
 	}
 
 	return 0;

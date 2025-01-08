@@ -31,7 +31,12 @@ typedef struct TOKEN_STRUCT
 {
 	TokenType type;
 	token_value_T value;
-	uint64_t position;
+	struct
+	{
+		uint64_t line;
+		uint64_t column;
+		uint8_t length;
+	} position;
 } token_T;
 
 typedef struct LEXER_STRUCT
@@ -39,11 +44,17 @@ typedef struct LEXER_STRUCT
 	const char *source;
 	size_t size;
 	uint64_t index;
+	struct
+	{
+		uint64_t line;
+		uint64_t column;
+	} position;
 	char chr;
 } lexer_T;
 
-token_T *init_token(TokenType type, token_value_T value, uint64_t position);
+token_T *init_token(TokenType type, token_value_T value, uint64_t line, uint64_t column, uint8_t length);
 lexer_T *init_lexer(const char *source, size_t size);
 token_T *next_token(lexer_T *lexer);
+void token_show(token_T *token);
 
 #endif // __LEXER_H__
