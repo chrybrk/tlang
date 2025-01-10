@@ -169,6 +169,12 @@ void *array_pop(array_T *array);
 // get the element from the array
 void *array_get(array_T *array, size_t index);
 
+// take n element from array
+array_T *array_take(array_T *array, unsigned int n);
+
+// drop n element from array
+array_T *array_drop(array_T *array, unsigned int n);
+
 // free array
 void array_free(array_T *array);
 
@@ -406,7 +412,35 @@ void *array_get(array_T *array, size_t index)
 	return array->buffer[index];
 }
 
-// FIXME(NOTE): it is not well tested, it might have memory leaks.
+array_T *array_take(array_T *array, unsigned int n)
+{
+	array_T *n_array = init_array(array->item_size);
+
+	for (size_t i = 0; i < n; ++i)
+	{
+		void *item = array_get(array, i);
+		if (item)
+			array_push(n_array, item);
+	}
+
+	return n_array;
+}
+
+array_T *array_drop(array_T *array, unsigned int n)
+{
+	array_T *n_array = init_array(array->item_size);
+
+	for (size_t i = n; i < array->index; ++i)
+	{
+		void *item = array_get(array, i);
+		if (item)
+			array_push(n_array, item);
+	}
+
+	return n_array;
+}
+
+// TODO(NOTE): it is not well tested, it might have memory leaks.
 void array_free(array_T *array)
 {
 	if (array->buffer)
@@ -484,13 +518,13 @@ array_T *string_seperate(string_T *s, unsigned char seperator)
 	{
 		if (s->string[i] == seperator)
 		{
-			string_T *string = init_string(string_substr(s, pos, i)->string);
+			string_T *string = string_substr(s, pos, i);
 			array_push(array, string);
 			pos = i + 1;
 		}
 	}
 
-	string_T *string = init_string(string_substr(s, pos, s->len)->string);
+	string_T *string = string_substr(s, pos, s->len);
 	array_push(array, string);
 
 	return array;
@@ -544,7 +578,7 @@ string_T *string_from_array(array_T *array)
 
 const char *string_cstr(string_T *s)
 {
-	return s->string;
+	return s ? s->string : "";
 }
 
 char string_at(string_T *s, size_t i)

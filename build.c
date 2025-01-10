@@ -25,10 +25,24 @@ void build_start(int argc, char **argv)
 				string_cstr(bin)
 			)
 	);
-
 	array_free(source_files);
 
+	string_T *args = string_from_string_list((const char **)argv, argc);
+
+	array_T *args_array = string_seperate(args, ' ');
+	array_T *first_arg = array_drop(args_array, 1);
+
+	array_free(args_array);
+
 	if (!status)
-		(void)command_execute(formate_string("exec %s", string_cstr(bin)));
+	{
+		(void)command_execute(
+				formate_string("exec %s %s",
+					string_cstr(bin),
+					string_cstr(string_from_array(first_arg))
+				)
+			);
+		array_free(first_arg);
+	}
 	else ERROR("failed to compile.");
 }

@@ -5,7 +5,7 @@ const char *read_file(const char *filename)
 	FILE* file = fopen(filename, "rb");
 	if (file == NULL)
 	{
-		perror("could not open file: ");
+		perror("could not open file -> ");
 		return NULL;
 	}
 
