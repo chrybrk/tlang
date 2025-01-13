@@ -195,6 +195,11 @@ token_T *next_token(lexer_T *lexer)
 
 		switch (lexer->chr)
 		{
+			case '*': return current_char_as_token(lexer, TT_STAR);
+			case '/': return current_char_as_token(lexer, TT_FSLASH);
+			case '\\': return current_char_as_token(lexer, TT_BSLASH);
+			case '+': return current_char_as_token(lexer, TT_PLUS);
+			case '-': return current_char_as_token(lexer, TT_MINUS);
 			case ':': return current_char_as_token(lexer, TT_COLON);
 			case ';': return current_char_as_token(lexer, TT_SEMI);
 			case '(': return current_char_as_token(lexer, TT_LP);
