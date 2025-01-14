@@ -10,6 +10,7 @@ typedef enum
 	AST_TERM,
 	AST_EXPR,
 	AST_LIST,
+	AST_STMT,
 	AST_PRGM
 } ast_type_T;
 
