@@ -16,8 +16,9 @@ int main(int argc, const char **argv)
 
 	parser_T *parser = init_parser(lexer);
 	ast_T *root = parser_parse(parser);
-	int x = interpreter_interpret(root);
-	printf("%d\n", x);
+	print_ast_as_tree(root);
+	// int x = interpreter_interpret(root);
+	// printf("%d\n", x);
 
 	return 0;
 }

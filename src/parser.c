@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdbool.h>
 #include "include/parser.h"
 #include "include/helper.h"
 
@@ -50,15 +51,23 @@ parser_T *init_parser(lexer_T *lexer)
 	}
 
 	ptr->lexer = lexer;
-	ptr->token = NULL;
+	ptr->token = next_token(ptr->lexer);
 
 	return ptr;
 }
 
-token_T *parser_eat(parser_T *parser)
+token_T *parser_eat(parser_T *parser, int type)
 {
+	if (type >= 0 && parser->token->type != (token_type_T)type)
+	{
+		fprintf(stderr, "expected `%s` got `%s`.\n", token_type_as_string(type), token_type_as_string(parser->token->type));
+		exit(1);
+	}
+
+	token_T *token = parser->token;
 	parser->token = next_token(parser->lexer);
-	return parser->token;
+
+	return token;
 }
 
 token_T *peek_token(parser_T *parser, unsigned int offset)
@@ -66,8 +75,8 @@ token_T *peek_token(parser_T *parser, unsigned int offset)
 	lexer_T *lexer_cp = init_lexer(parser->lexer->source);
 	memcpy(lexer_cp, parser->lexer, sizeof(struct LEXER_STRUCT));
 
-	token_T *token;
-	for (unsigned int i = 0; i <= offset; ++i)
+	token_T *token = parser->token;
+	for (unsigned int i = 0; i < offset; ++i)
 		token = next_token(lexer_cp);
 
 	free(lexer_cp);
@@ -82,12 +91,9 @@ int match_token(token_T *token, token_type_T type)
 
 ast_T *parser_parse_number(parser_T *parser)
 {
-	token_T *token = parser_eat(parser);
-	int is_token_number = match_token(token, TT_INT);
+	token_T *token = parser_eat(parser, TT_INT);
 
-	if (is_token_number) return init_ast_left(AST_NUMBER, token, NULL);
-
-	return NULL;
+	return init_ast_left(AST_NUMBER, token, NULL);
 }
 
 ast_T *parser_parse_factor(parser_T *parser)
@@ -101,10 +107,9 @@ ast_T *parser_parse_term(parser_T *parser)
 	ast_T *left = parser_parse_factor(parser);
 
 	token_T *token;
-
 	while ((token = peek_token(parser, 0)) && (match_token(token, TT_STAR) || match_token(token, TT_FSLASH)))
 	{
-		token = parser_eat(parser);
+		token = parser_eat(parser, -1);
 		ast_T *right = parser_parse_factor(parser);
 
 		if (right == NULL)
@@ -116,7 +121,7 @@ ast_T *parser_parse_term(parser_T *parser)
 		left = init_ast_lr(AST_TERM, token, left, right);
 	}
 
-	return left ? left : NULL;
+	return left;
 }
 
 ast_T *parser_parse_expr(parser_T *parser)
@@ -124,10 +129,10 @@ ast_T *parser_parse_expr(parser_T *parser)
 	ast_T *left = parser_parse_term(parser);
 
 	token_T *token;
-
 	while ((token = peek_token(parser, 0)) && (match_token(token, TT_PLUS) || match_token(token, TT_MINUS)))
 	{
-		token = parser_eat(parser);
+		token = parser_eat(parser, -1);
+
 		ast_T *right = parser_parse_term(parser);
 
 		if (right == NULL)
@@ -139,21 +144,28 @@ ast_T *parser_parse_expr(parser_T *parser)
 		left = init_ast_lr(AST_EXPR, token, left, right);
 	}
 
-	return left ? left : NULL;
+	return left;
+}
+
+ast_T *parser_parse_statement(parser_T *parser)
+{
+	ast_T *ast = NULL;
+	switch (parser->token->type)
+	{
+		default: ast = parser_parse_expr(parser);
+	}
+
+	parser_eat(parser, TT_SEMI);
+
+	return ast;
 }
 
 ast_T *parser_parse(parser_T *parser)
 {
-	ast_T *program = init_ast_with_type(AST_PRGM);
-	program->left = parser_parse_expr(parser);
+	ast_T *program = parser_parse_statement(parser);
 
-	/*
-	 * left -> statement -> expr
-	 * right -> statement
-	 * 						left -> statement -> expr
-	 * 						right -> statement
-	 * 											-> left -> 
-	*/
+	while (parser->token->type != TT_EOF)
+		program = init_ast_lr(AST_STMT, NULL, program, parser_parse_statement(parser));
 
 	return program;
 }

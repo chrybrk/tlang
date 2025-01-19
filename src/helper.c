@@ -1,12 +1,10 @@
 #include "include/helper.h"
 
-void print_token(token_T *token)
+const char *token_type_as_string(token_type_T at)
 {
-	if (!token) return;
-
 	const char *type;
 
-	switch (token->type)
+	switch (at)
 	{
 		case TT_ID: type = "TT_ID"; break;
 		case TT_INT: type = "TT_INT"; break;
@@ -23,6 +21,15 @@ void print_token(token_T *token)
 		case TT_EOF: type = "end"; break;
 		default: type = "not-implemented";
 	}
+
+	return type;
+}
+
+void print_token(token_T *token)
+{
+	if (!token) return;
+
+	const char *type = token_type_as_string(token->type);
 
 	printf("Token(%s, %s, %ld:%ld:%d)\n",
 			type,
