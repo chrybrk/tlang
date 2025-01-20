@@ -17,7 +17,7 @@ const char *token_type_as_string(token_type_T at)
 		case TT_SEMI: type = "TT_SEMI"; break;
 		case TT_LP: type = "TT_LP"; break;
 		case TT_RP: type = "TT_RP"; break;
-		case TT_EQ: type = "TT_EQ"; break;
+		case TT_ASSIGN: type = "TT_ASSIGN"; break;
 		case TT_EOF: type = "end"; break;
 		default: type = "not-implemented";
 	}
@@ -46,7 +46,9 @@ const char *ast_type_as_string(ast_type_T at)
 
 	switch (at)
 	{
-		case AST_NUMBER: type = "AST_NUMBER"; break;
+		case AST_LET: type = "AST_LET"; break;
+		case AST_CALL: type = "AST_CALL"; break;
+		case AST_PRIMARY: type = "AST_PRIMARY"; break;
 		case AST_FACTOR: type = "AST_FACTOR"; break;
 		case AST_TERM: type = "AST_TERM"; break;
 		case AST_EXPR: type = "AST_EXPR"; break;

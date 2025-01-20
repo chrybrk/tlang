@@ -5,7 +5,9 @@
 
 typedef enum
 {
-	AST_NUMBER,
+	AST_LET,
+	AST_CALL,
+	AST_PRIMARY,
 	AST_FACTOR,
 	AST_TERM,
 	AST_EXPR,
@@ -13,6 +15,17 @@ typedef enum
 	AST_STMT,
 	AST_PRGM
 } ast_type_T;
+
+typedef enum
+{
+	d_i8,
+	d_i16,
+	d_i32,
+	d_i64,
+	d_char,
+	d_string,
+	d_void
+} data_type_T;
 
 typedef struct AST_STRUCT ast_T;
 

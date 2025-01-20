@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include "include/parser.h"
@@ -89,16 +90,59 @@ int match_token(token_T *token, token_type_T type)
 	return token && token->type == type ? 1 : 0;
 }
 
-ast_T *parser_parse_number(parser_T *parser)
+int match_token_with_data_type(token_T *token)
 {
-	token_T *token = parser_eat(parser, TT_INT);
+	if (!token) return -1;
 
-	return init_ast_left(AST_NUMBER, token, NULL);
+	const char *data_type[] = {
+		"i8",
+		"i16",
+		"i32",
+		"i64",
+		"char",
+		"string",
+		"void"
+	};
+
+	size_t index = 0;
+	size_t size = sizeof(data_type) / sizeof(data_type[0]);
+	for (; index < size; ++index)
+	{
+		if (!strcmp(token->value, data_type[index]))
+			return index;
+	}
+
+	return -1;
+}
+
+ast_T *parser_parse_primary(parser_T *parser)
+{
+	if (!match_token(parser->token, TT_INT) && !match_token(parser->token, TT_ID))
+		return NULL;
+
+	token_T *token = parser_eat(parser, -1);
+	return init_ast_left(AST_PRIMARY, token, NULL);
 }
 
 ast_T *parser_parse_factor(parser_T *parser)
 {
-	ast_T *left = parser_parse_number(parser);
+	ast_T *left = parser_parse_primary(parser);
+
+	while (match_token(parser->token, TT_LP))
+	{
+		parser_eat(parser, TT_LP);
+		ast_T *right = parser_parse_expr(parser);
+		parser_eat(parser, TT_RP);
+
+		if (right == NULL)
+		{
+			printf("failed to parse right node of factor.\n");
+			return NULL;
+		}
+
+		left = init_ast_lr(AST_FACTOR, NULL, left, right);
+	}
+
 	return left ? init_ast(AST_FACTOR, NULL, left, NULL, NULL) : NULL;
 }
 
@@ -147,11 +191,73 @@ ast_T *parser_parse_expr(parser_T *parser)
 	return left;
 }
 
+ast_T *parser_parse_let(parser_T *parser)
+{
+	// eat `let`
+	parser_eat(parser, -1);
+
+	// now we should follow this:
+	// 	let var_name: type = expr
+
+	// variable name
+	token_T *var_name = parser_eat(parser, TT_ID);
+
+	// colon
+	parser_eat(parser, TT_COLON);
+
+	// type of variable
+	ast_T *left = parser_parse_primary(parser);
+
+	int is_data_type_valid = match_token_with_data_type(left->token);
+	if (is_data_type_valid < 0)
+		fprintf(stderr,
+				"expected data type are `i8, i16, i32, i64, char, string, void`, got `%s`.\n",
+				left->token->value),
+		exit(1);
+
+	// assignment operator
+	parser_eat(parser, TT_ASSIGN);
+
+	return init_ast_lr(AST_LET, var_name, left, parser_parse_expr(parser));
+}
+
+ast_T *parser_parse_id(parser_T *parser)
+{
+	if (!strcmp(parser->token->value, "let"))
+		return parser_parse_let(parser);
+
+	return parser_parse_expr(parser);
+}
+
+ast_T *parser_parse_call(parser_T *parser)
+{
+	// function name
+	token_T *name = parser_eat(parser, TT_ID);
+
+	parser_eat(parser, TT_LP);
+
+	ast_T *expr = parser_parse_expr(parser);
+
+	parser_eat(parser, TT_RP);
+
+	return init_ast_left(AST_CALL, name, expr);
+}
+
 ast_T *parser_parse_statement(parser_T *parser)
 {
 	ast_T *ast = NULL;
+
 	switch (parser->token->type)
 	{
+		case TT_ID:
+		{
+			switch (peek_token(parser, 1)->type)
+			{
+				case TT_LP: ast = parser_parse_call(parser); break;
+				default: ast = parser_parse_let(parser);
+			}
+			break;
+		}
 		default: ast = parser_parse_expr(parser);
 	}
 

@@ -204,7 +204,7 @@ token_T *next_token(lexer_T *lexer)
 			case ';': return current_char_as_token(lexer, TT_SEMI);
 			case '(': return current_char_as_token(lexer, TT_LP);
 			case ')': return current_char_as_token(lexer, TT_RP);
-			case '=': return current_char_as_token(lexer, TT_EQ);
+			case '=': return current_char_as_token(lexer, TT_ASSIGN);
 			default: fprintf(stderr, "illegal token, `%c` at index `%ld`.\n", lexer->chr, 0); exit(1);
 		}
 	}

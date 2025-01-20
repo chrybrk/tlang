@@ -1,3 +1,7 @@
+statement	-> { let, } | call | expr -> `;`
+let				-> ident: primary = expr
+call			-> ident(expr)
 expr 			-> term([+, -]term)*
 term 			-> factor([*, /]factor)*
-factor 		-> (expr) | number
+factor 		-> (expr) | primary
+primary		-> number | ident

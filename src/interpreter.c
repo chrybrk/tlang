@@ -49,11 +49,10 @@ int program(ast_T *root)
 {
 	switch (root->type)
 	{
-		case AST_PRGM: return program(root->left);
 		case AST_EXPR: return expr(root);
 		case AST_TERM: return term(root);
 		case AST_FACTOR: return factor(root);
-		case AST_NUMBER: return number(root);
+		case AST_PRIMARY: return number(root);
 	}
 
 	return 0;

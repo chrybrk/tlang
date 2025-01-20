@@ -9,16 +9,17 @@ typedef enum
 {
 	TT_ID, 							// identifier
 	TT_INT,							// integer
-	TT_STAR,						// star
-	TT_FSLASH,					// forward slash
-	TT_BSLASH,					// backward slash
-	TT_PLUS,						// plus
-	TT_MINUS,						// minus 
-	TT_COLON,						// colon
-	TT_SEMI,						// semicolon
-	TT_LP,							// left-paran
-	TT_RP,							// right-paran
-	TT_EQ,							// equal
+	TT_STAR,						// star `*`
+	TT_FSLASH,					// forward slash `/`
+	TT_BSLASH,					// backward slash `\`
+	TT_PLUS,						// plus `+`
+	TT_MINUS,						// minus `-`
+	TT_COLON,						// colon `:`
+	TT_SEMI,						// semicolon `;`
+	TT_LP,							// left-paran `(`
+	TT_RP,							// right-paran `)`
+	TT_EQ,							// equal `==`
+	TT_ASSIGN,					// assignment `=`
 	TT_EOF							// end-of-file
 } token_type_T;
 
