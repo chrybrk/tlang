@@ -29,6 +29,7 @@ lexer_T *init_lexer(const char *source)
 	ptr->source = source;
 	ptr->size = strlen(ptr->source) + 1;
 	ptr->index = 0;
+	ptr->line_cur = 0;
 	ptr->chr = ptr->source[ptr->index];
 	ptr->position.line = 1;
 	ptr->position.column = 1;
@@ -36,11 +37,30 @@ lexer_T *init_lexer(const char *source)
 	return ptr;
 }
 
+const char *get_current_line(lexer_T *lexer)
+{
+	uint64_t from = lexer->line_cur;
+	uint64_t to = from;
+
+	while (lexer->source[to] && lexer->source[to] != '\n')
+		to++;
+
+	uint64_t size = to - from;
+	char *line = malloc(size + 1);
+
+	for (uint64_t i = from; i < to; ++i)
+		line[i - from] = lexer->source[i];
+
+	line[size + 1] = '\0';
+	
+	return line;
+}
+
 void lexer_advance(lexer_T *lexer)
 {
 	// update position
 	if (lexer->chr == '\n')
-		lexer->position.line++, lexer->position.column = 1;
+		lexer->position.line++, lexer->position.column = 1, lexer->line_cur = lexer->index + 1;
 	else
 		lexer->position.column++;
 
@@ -205,7 +225,21 @@ token_T *next_token(lexer_T *lexer)
 			case '(': return current_char_as_token(lexer, TT_LP);
 			case ')': return current_char_as_token(lexer, TT_RP);
 			case '=': return current_char_as_token(lexer, TT_ASSIGN);
-			default: fprintf(stderr, "illegal token, `%c` at index `%ld`.\n", lexer->chr, 0); exit(1);
+			default:
+			{
+				const char *log =
+					formate_string(
+							"%s:%ld:%ld: %serror%s: unknown character `%c`\n\t %ld | %s\n",
+							filename,
+							lexer->position.line, lexer->position.column,
+							get_term_color(BOLD_TEXT, RED), get_term_color(RESET, WHITE),
+							lexer->chr,
+							lexer->position.line, get_current_line(lexer)
+					);
+				error_flush(ERROR, log);
+				lexer_advance(lexer);
+				lexer_skip_whitespaces(lexer);
+			}
 		}
 	}
 

@@ -61,8 +61,16 @@ token_T *parser_eat(parser_T *parser, int type)
 {
 	if (type >= 0 && parser->token->type != (token_type_T)type)
 	{
-		fprintf(stderr, "expected `%s` got `%s`.\n", token_type_as_string(type), token_type_as_string(parser->token->type));
-		exit(1);
+		const char *log =
+			formate_string("%s:%ld:%ld: %serror%s: expected `%s` but got `%s`\n\t %ld | %s\n",
+					filename,
+					parser->token->position.line, parser->token->position.column,
+					get_term_color(BOLD_TEXT, RED), get_term_color(RESET, WHITE),
+					token_type_as_string(type), token_type_as_string(parser->token->type),
+					parser->token->position.line, get_current_line(parser->lexer)
+			);
+
+		error_flush(ERROR, log);
 	}
 
 	token_T *token = parser->token;
@@ -229,6 +237,17 @@ ast_T *parser_parse_id(parser_T *parser)
 	return parser_parse_expr(parser);
 }
 
+ast_T *parser_parse_assignment(parser_T *parser)
+{
+	token_T *name = parser_eat(parser, TT_ID);
+
+	parser_eat(parser, TT_ASSIGN);
+
+	ast_T *expr = parser_parse_expr(parser);
+
+	return init_ast_left(AST_ASSIGN, name, expr);
+}
+
 ast_T *parser_parse_call(parser_T *parser)
 {
 	// function name
@@ -254,6 +273,7 @@ ast_T *parser_parse_statement(parser_T *parser)
 			switch (peek_token(parser, 1)->type)
 			{
 				case TT_LP: ast = parser_parse_call(parser); break;
+				case TT_ASSIGN: ast = parser_parse_assignment(parser); break;
 				default: ast = parser_parse_let(parser);
 			}
 			break;
@@ -261,7 +281,8 @@ ast_T *parser_parse_statement(parser_T *parser)
 		default: ast = parser_parse_expr(parser);
 	}
 
-	parser_eat(parser, TT_SEMI);
+	if (ast)
+		parser_eat(parser, TT_SEMI);
 
 	return ast;
 }
@@ -270,8 +291,19 @@ ast_T *parser_parse(parser_T *parser)
 {
 	ast_T *program = parser_parse_statement(parser);
 
-	while (parser->token->type != TT_EOF)
+	while (program && parser->token->type != TT_EOF)
 		program = init_ast_lr(AST_STMT, NULL, program, parser_parse_statement(parser));
+
+	if (!program)
+	{
+		const char *log = formate_string(
+				"%s:%ld:%ld: %swarn%s: expected `let`, ...",
+				filename,
+				parser->lexer->position.line, parser->lexer->position.column,
+				get_term_color(BOLD_TEXT, YELLOW), get_term_color(RESET, WHITE)
+		);
+		error_flush(WARN, log);
+	}
 
 	return program;
 }

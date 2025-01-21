@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include "global.h"
 
 typedef enum
 {
@@ -43,6 +44,7 @@ typedef struct LEXER_STRUCT
 	size_t size;
 	char chr;
 	uint64_t index;
+	uint64_t line_cur;
 	position_T position;
 } lexer_T;
 
@@ -54,5 +56,8 @@ lexer_T *init_lexer(const char *source);
 
 // generate token
 token_T *next_token(lexer_T *lexer);
+
+// get current working line
+const char *get_current_line(lexer_T *lexer);
 
 #endif // __LEXER_H__
