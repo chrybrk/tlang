@@ -51,7 +51,7 @@ const char *get_current_line(lexer_T *lexer)
 	for (uint64_t i = from; i < to; ++i)
 		line[i - from] = lexer->source[i];
 
-	line[size + 1] = '\0';
+	line[size] = '\0';
 	
 	return line;
 }

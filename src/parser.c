@@ -57,21 +57,46 @@ parser_T *init_parser(lexer_T *lexer)
 	return ptr;
 }
 
+void create_log(parser_T *parser, LOG_KIND kind, const char *log)
+{
+	const char *color_log;
+	switch (kind)
+	{
+		case ERROR:
+			color_log =
+				formate_string("%serror%s", get_term_color(BOLD_TEXT, RED), get_term_color(RESET, WHITE));
+			break;
+
+		case WARN:
+			color_log =
+				formate_string("%swarn%s", get_term_color(BOLD_TEXT, YELLOW), get_term_color(RESET, WHITE));
+			break;
+
+		case INFO:
+			color_log =
+				formate_string("%sinfo%s", get_term_color(BOLD_TEXT, GREEN), get_term_color(RESET, WHITE));
+			break;
+	}
+
+	error_flush(
+			kind,
+			formate_string("%s:%ld:%ld: %s: %s\n\t %ld | %s\n",
+					filename,
+					parser->token->position.line, parser->token->position.column,
+					color_log,
+					log,
+					parser->token->position.line, get_current_line(parser->lexer)
+
+			)
+	);
+}
+
 token_T *parser_eat(parser_T *parser, int type)
 {
 	if (type >= 0 && parser->token->type != (token_type_T)type)
-	{
-		const char *log =
-			formate_string("%s:%ld:%ld: %serror%s: expected `%s` but got `%s`\n\t %ld | %s\n",
-					filename,
-					parser->token->position.line, parser->token->position.column,
-					get_term_color(BOLD_TEXT, RED), get_term_color(RESET, WHITE),
-					token_type_as_string(type), token_type_as_string(parser->token->type),
-					parser->token->position.line, get_current_line(parser->lexer)
-			);
-
-		error_flush(ERROR, log);
-	}
+		create_log(parser, ERROR, formate_string("expected `%s` but got `%s`",
+					token_type_as_string(type), token_type_as_string(parser->token->type)
+		));
 
 	token_T *token = parser->token;
 	parser->token = next_token(parser->lexer);
@@ -216,17 +241,22 @@ ast_T *parser_parse_let(parser_T *parser)
 	// type of variable
 	ast_T *left = parser_parse_primary(parser);
 
-	int is_data_type_valid = match_token_with_data_type(left->token);
-	if (is_data_type_valid < 0)
-		fprintf(stderr,
-				"expected data type are `i8, i16, i32, i64, char, string, void`, got `%s`.\n",
-				left->token->value),
-		exit(1);
+	if (!left)
+		create_log(parser, ERROR, "expected `(i8, i16, i32, i64, char, string)` after `:`, maybe you meant to add it?");
 
-	// assignment operator
-	parser_eat(parser, TT_ASSIGN);
+	ast_T *right = NULL;
+	if (peek_token(parser, 0)->type == TT_ASSIGN)
+	{
+		// assignment operator
+		parser_eat(parser, TT_ASSIGN);
 
-	return init_ast_lr(AST_LET, var_name, left, parser_parse_expr(parser));
+		right = parser_parse_expr(parser);
+
+		if (!right)
+			create_log(parser, ERROR, "maybe you meant to do `let <name>: <type>;`");
+	}
+
+	return right ? init_ast_lr(AST_LET, var_name->type == TT_EOF ? NULL : var_name, left, right) : init_ast_left(AST_LET, var_name->type == TT_EOF ? NULL : var_name, left);
 }
 
 ast_T *parser_parse_id(parser_T *parser)
@@ -297,7 +327,7 @@ ast_T *parser_parse(parser_T *parser)
 	if (!program)
 	{
 		const char *log = formate_string(
-				"%s:%ld:%ld: %swarn%s: expected `let`, ...",
+				"%s:%ld:%ld: %swarn%s: expected `let`, `extern`, `fn`, ... but got empty file.",
 				filename,
 				parser->lexer->position.line, parser->lexer->position.column,
 				get_term_color(BOLD_TEXT, YELLOW), get_term_color(RESET, WHITE)
