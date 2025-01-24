@@ -5,3 +5,9 @@ expr 			-> term([+, -]term)*
 term 			-> factor([*, /]factor)*
 factor 		-> (expr) | primary
 primary		-> number | ident
+
+
+
+- SIMD
+- module
+- helpful error and warning

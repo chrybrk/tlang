@@ -150,11 +150,14 @@ int match_token_with_data_type(token_T *token)
 
 ast_T *parser_parse_primary(parser_T *parser)
 {
-	if (!match_token(parser->token, TT_INT) && !match_token(parser->token, TT_ID))
-		return NULL;
-
-	token_T *token = parser_eat(parser, -1);
-	return init_ast_left(AST_PRIMARY, token, NULL);
+	switch (parser->token->type)
+	{
+		case TT_INT:
+		case TT_ID:
+			return init_ast_left(AST_PRIMARY, parser_eat(parser, -1), NULL);
+		default:
+			return NULL;
+	}
 }
 
 ast_T *parser_parse_factor(parser_T *parser)
@@ -167,9 +170,9 @@ ast_T *parser_parse_factor(parser_T *parser)
 		ast_T *right = parser_parse_expr(parser);
 		parser_eat(parser, TT_RP);
 
-		if (right == NULL)
+		if (!right)
 		{
-			printf("failed to parse right node of factor.\n");
+			create_log(parser, ERROR, "expected `expr` here");
 			return NULL;
 		}
 
@@ -189,9 +192,9 @@ ast_T *parser_parse_term(parser_T *parser)
 		token = parser_eat(parser, -1);
 		ast_T *right = parser_parse_factor(parser);
 
-		if (right == NULL)
+		if (!right)
 		{
-			printf("failed to parse right node of term.\n");
+			create_log(parser, ERROR, "expected `factor` after `*, /`, did you forgot to add it?");
 			return NULL;
 		}
 
@@ -212,9 +215,9 @@ ast_T *parser_parse_expr(parser_T *parser)
 
 		ast_T *right = parser_parse_term(parser);
 
-		if (right == NULL)
+		if (!right)
 		{
-			printf("failed to parse right node of expr.\n");
+			create_log(parser, ERROR, "expected `term` after `+, -`, did you forgot to add it?");
 			return NULL;
 		}
 
@@ -242,7 +245,7 @@ ast_T *parser_parse_let(parser_T *parser)
 	ast_T *left = parser_parse_primary(parser);
 
 	if (!left)
-		create_log(parser, ERROR, "expected `(i8, i16, i32, i64, char, string)` after `:`, maybe you meant to add it?");
+		create_log(parser, ERROR, "expected `(i8, i16, i32, i64, char, string)` after `:`");
 
 	ast_T *right = NULL;
 	if (peek_token(parser, 0)->type == TT_ASSIGN)
@@ -253,7 +256,10 @@ ast_T *parser_parse_let(parser_T *parser)
 		right = parser_parse_expr(parser);
 
 		if (!right)
+		{
 			create_log(parser, ERROR, "maybe you meant to do `let <name>: <type>;`");
+			create_log(parser, ERROR, "OR maybe you meant to do `let <name>: <type> = <expr>;`");
+		}
 	}
 
 	return right ? init_ast_lr(AST_LET, var_name->type == TT_EOF ? NULL : var_name, left, right) : init_ast_left(AST_LET, var_name->type == TT_EOF ? NULL : var_name, left);
@@ -304,7 +310,7 @@ ast_T *parser_parse_statement(parser_T *parser)
 			{
 				case TT_LP: ast = parser_parse_call(parser); break;
 				case TT_ASSIGN: ast = parser_parse_assignment(parser); break;
-				default: ast = parser_parse_let(parser);
+				default: ast = parser_parse_id(parser);
 			}
 			break;
 		}
