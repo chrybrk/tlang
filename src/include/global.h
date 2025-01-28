@@ -3,8 +3,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdarg.h>
 #include <string.h>
+#include "utils.h"
+#include "parser.h"
 
 typedef enum {
 	BLACK 	= 0,
@@ -44,7 +47,22 @@ typedef struct ERROR_STRUCT
 	const char *log;
 } error_T;
 
+typedef enum
+{
+	FUN, VAR
+} symbol_type;
+
+typedef struct SYMBOL_TABLE_STRUCT
+{
+	uint16_t scope;
+	symbol_type type;
+	ast_T *node;
+} symbol_table_T;
+
+symbol_table_T *init_symbol_table(uint16_t scope, symbol_type type, ast_T *node);
+
 extern const char *filename;
+extern hash_T *symbols;
 
 void error_flush(LOG_KIND kind, const char *log);
 

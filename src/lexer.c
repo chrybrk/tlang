@@ -1,6 +1,8 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
+#include "include/helper.h"
+#include "include/global.h"
 #include "include/lexer.h"
 
 token_T *init_token(token_type_T type, const char *value, position_T position)
@@ -155,19 +157,7 @@ token_T *collect_digit(lexer_T *lexer)
 
 token_T *collect_ident(lexer_T *lexer)
 {
-	// copy lexer to another memory
-	lexer_T *lexer_cp = init_lexer(lexer->source);
-	memcpy(lexer_cp, lexer, sizeof(struct LEXER_STRUCT));
-
-	size_t bf_size = 0;
-	while (isdigit(lexer_cp->chr))
-	{
-		bf_size++;
-		lexer_advance(lexer_cp);
-	}
-
-	// TODO: free lexer
-	
+	size_t bf_size = calc_buffer_size(lexer, isident);
 	char *bf = malloc(sizeof(char) * (bf_size + 1));
 
 	// capture the ident 
@@ -204,6 +194,63 @@ token_T *current_word_as_token(lexer_T *lexer)
 	return tok;
 }
 
+token_T *current_string_as_token(lexer_T *lexer)
+{
+	lexer_advance(lexer);
+
+	size_t bf_size = calc_buffer_size(lexer, isnotdq);
+	char *bf = malloc(sizeof(char) * (bf_size + 1));
+
+	// capture the ident 
+	size_t bf_idx = 0;
+	while (isnotdq(lexer->chr))
+	{
+		bf[bf_idx++] = lexer->chr;
+		lexer_advance(lexer);
+	}
+
+	bf[bf_idx] = '\0';
+
+	// create token
+	return init_token(
+			TT_STRING,
+			bf,
+			lexer->position
+	);
+}
+
+token_T
+*current_two_char_as_token(
+		lexer_T *lexer,
+		char nc,
+		token_type_T if_tt,
+		token_type_T else_tt
+)
+{
+	// current char
+	char cc = lexer->chr;
+
+	lexer_advance(lexer);
+
+	if (lexer->chr == nc)
+	{
+		char *s = malloc(3);
+		s[0] = cc;
+		s[1] = lexer->chr;
+		s[2] = '\0';
+
+		lexer_advance(lexer);
+
+		return init_token(else_tt, s, lexer->position);
+	}
+
+	char *s = malloc(2);
+	s[0] = cc;
+	s[1] = '\0';
+
+	return init_token(if_tt, s, lexer->position);
+}
+
 token_T *next_token(lexer_T *lexer)
 {
 	lexer_skip_whitespaces(lexer);
@@ -216,15 +263,29 @@ token_T *next_token(lexer_T *lexer)
 		switch (lexer->chr)
 		{
 			case '*': return current_char_as_token(lexer, TT_STAR);
+			case '%': return current_char_as_token(lexer, TT_MOD);
+			case '^': return current_char_as_token(lexer, TT_POWER);
+			case '~': return current_char_as_token(lexer, TT_LXOR);
 			case '/': return current_char_as_token(lexer, TT_FSLASH);
 			case '\\': return current_char_as_token(lexer, TT_BSLASH);
 			case '+': return current_char_as_token(lexer, TT_PLUS);
 			case '-': return current_char_as_token(lexer, TT_MINUS);
 			case ':': return current_char_as_token(lexer, TT_COLON);
+			case ',': return current_char_as_token(lexer, TT_COMMA);
 			case ';': return current_char_as_token(lexer, TT_SEMI);
 			case '(': return current_char_as_token(lexer, TT_LP);
 			case ')': return current_char_as_token(lexer, TT_RP);
-			case '=': return current_char_as_token(lexer, TT_ASSIGN);
+			case '[': return current_char_as_token(lexer, TT_LS);
+			case ']': return current_char_as_token(lexer, TT_RS);
+			case '{': return current_char_as_token(lexer, TT_LB);
+			case '}': return current_char_as_token(lexer, TT_RB);
+			case '&': return current_two_char_as_token(lexer, '&', TT_LAND, TT_AND);
+			case '|': return current_two_char_as_token(lexer, '|', TT_LOR, TT_OR);
+			case '=': return current_two_char_as_token(lexer, '=', TT_ASSIGN, TT_EQ);
+			case '!': return current_two_char_as_token(lexer, '=', TT_LNOT, TT_NE);
+			case '<': return current_two_char_as_token(lexer, '=', TT_LT, TT_LTE);
+			case '>': return current_two_char_as_token(lexer, '=', TT_GT, TT_GTE);
+			case '"': return current_string_as_token(lexer);
 			default:
 			{
 				const char *log =

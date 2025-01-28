@@ -4,22 +4,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "global.h"
 
 typedef enum
 {
 	TT_ID, 							// identifier
 	TT_INT,							// integer
+	TT_STRING,					// string 
 	TT_STAR,						// star `*`
+	TT_MOD,							// mod `%`
+	TT_POWER,						// power `^`
+	TT_LXOR,						// lg xor `~`
+	TT_LAND,						// lg and `&`
+	TT_LOR,							// lg or `|`
+	TT_LNOT,						// lnot or `!`
 	TT_FSLASH,					// forward slash `/`
 	TT_BSLASH,					// backward slash `\`
 	TT_PLUS,						// plus `+`
 	TT_MINUS,						// minus `-`
 	TT_COLON,						// colon `:`
+	TT_COMMA,						// comma `,`
 	TT_SEMI,						// semicolon `;`
 	TT_LP,							// left-paran `(`
 	TT_RP,							// right-paran `)`
+	TT_LS,							// left-square `[`
+	TT_RS,							// right-square `]`
+	TT_LB,							// left-brace `{`
+	TT_RB,							// right-brace `}`
 	TT_EQ,							// equal `==`
+	TT_NE,							// not-equal `!=`
+	TT_LT,							// less than `<`
+	TT_GT,							// greater than `>`
+	TT_LTE,							// less than equal `<=`
+	TT_GTE,							// greater than `>=`
+	TT_AND,							// and `&&`
+	TT_OR,							// or `||`
 	TT_ASSIGN,					// assignment `=`
 	TT_EOF							// end-of-file
 } token_type_T;

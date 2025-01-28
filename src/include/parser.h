@@ -2,11 +2,11 @@
 #define __PARSER_H__
 
 #include "lexer.h"
-#include "global.h"
 
 typedef enum
 {
 	AST_LET,
+	AST_RETURN,
 	AST_ASSIGN,
 	AST_CALL,
 	AST_PRIMARY,

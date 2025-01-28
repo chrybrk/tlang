@@ -80,3 +80,19 @@ const char *get_term_color(TERM_KIND kind, TERM_COLOR color)
 		case RESET: return formate_string("\e[0m");
 	}
 }
+
+symbol_table_T *init_symbol_table(uint16_t scope, symbol_type type, ast_T *node)
+{
+	symbol_table_T *st = malloc(sizeof(struct SYMBOL_TABLE_STRUCT));
+	if (!st)
+	{
+		perror("cannot allocate memory for symbol: ");
+		return NULL;
+	}
+
+	st->scope = scope;
+	st->type = type;
+	st->node = node;
+
+	return st;
+}

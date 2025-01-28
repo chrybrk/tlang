@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "include/parser.h"
 #include "include/helper.h"
+#include "include/global.h"
 
 ast_T *init_ast(ast_type_T type, token_T *token, ast_T *left, ast_T *mid, ast_T *right)
 {
@@ -227,8 +228,14 @@ ast_T *parser_parse_expr(parser_T *parser)
 	return left;
 }
 
+// FIXME: line:column are not at right position, because when we create log,
+// it is capturing the current position, which might be off from where i want it.
+//
+// TODO: create_log should take position structure, so that it knows where to point at.
 ast_T *parser_parse_let(parser_T *parser)
 {
+	ast_T *ast = NULL;
+
 	// eat `let`
 	parser_eat(parser, -1);
 
@@ -244,7 +251,7 @@ ast_T *parser_parse_let(parser_T *parser)
 	// type of variable
 	ast_T *left = parser_parse_primary(parser);
 
-	if (!left)
+	if (!left || match_token_with_data_type(left->token) < 0)
 		create_log(parser, ERROR, "expected `(i8, i16, i32, i64, char, string)` after `:`");
 
 	ast_T *right = NULL;
@@ -262,13 +269,31 @@ ast_T *parser_parse_let(parser_T *parser)
 		}
 	}
 
-	return right ? init_ast_lr(AST_LET, var_name->type == TT_EOF ? NULL : var_name, left, right) : init_ast_left(AST_LET, var_name->type == TT_EOF ? NULL : var_name, left);
+	ast = right ?
+		init_ast_lr(AST_LET, var_name->type == TT_EOF ? NULL : var_name, left, right) :
+		init_ast_left(AST_LET, var_name->type == TT_EOF ? NULL : var_name, left);
+
+	return ast;
+}
+
+ast_T *parser_parse_return(parser_T *parser)
+{
+	parser_eat(parser, -1);
+
+	ast_T *left = parser_parse_expr(parser);
+	if (!left)
+		create_log(parser, ERROR, "return expects expr");
+
+	return init_ast_left(AST_RETURN, NULL, left);
 }
 
 ast_T *parser_parse_id(parser_T *parser)
 {
 	if (!strcmp(parser->token->value, "let"))
 		return parser_parse_let(parser);
+
+	else if (!strcmp(parser->token->value, "ret"))
+		return parser_parse_return(parser);
 
 	return parser_parse_expr(parser);
 }
