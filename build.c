@@ -7,42 +7,37 @@ const char *build_bin = "build";
 void build_start(int argc, char **argv)
 {
 	// create bin folder if it does not exist.
-	create_directory(init_string("bin"));
+	create_directory("bin");
 
-	// capture all the source files
-	// into an array
-	string_T *source_path = init_string("src/");
-	string_T *source_include = init_string("-Isrc/ -Isrc/include");
-	string_T *bin = init_string("bin/tlang");
+	// define project
+	const char *project_bin = "bin/tlang";
+	const char *project_source_path = "src/";
+	const char *project_includes = "-Isrc/include";
 
-	array_T *source_files = file_get_end(source_path, init_string(".c"));
+	array_T *project_source_files_array = file_get_end(project_source_path, ".c");
+	const char *project_source_files = strconvCAtoCC(project_source_files_array, ' ');
 
-	// compile
-	bool status = command_execute(
-			formate_string("gcc %s %s -o %s",
-				string_cstr(string_from_array(source_files)),
-				string_cstr(source_include),
-				string_cstr(bin)
+	array_free(project_source_files_array);
+
+	// build
+	int project_compile_status = command_execute(
+			formate_string(
+				"gcc %s %s -o %s",
+				project_includes,
+				project_source_files,
+				project_bin
 			)
 	);
-	array_free(source_files);
 
-	string_T *args = string_from_string_list((const char **)argv, argc);
-
-	array_T *args_array = string_seperate(args, ' ');
-	array_T *first_arg = array_drop(args_array, 1);
-
-	array_free(args_array);
-
-	if (!status)
+	if (!project_compile_status)
 	{
-		(void)command_execute(
-				formate_string("exec %s %s",
-					string_cstr(bin),
-					string_cstr(string_from_array(first_arg))
-				)
-			);
-		array_free(first_arg);
+		const char *argv_cc = strconvCCAtoCC((const char **)argv, argc, ' ');
+		array_T *argv_array = strtoarray(argv_cc, ' ');
+
+		if (argc >= 2)
+			command_execute(formate_string("exec %s %s", project_bin, (const char *)array_get(argv_array, 1)));
+
+		array_free(argv_array);
 	}
 	else ERROR("failed to compile.");
 }
