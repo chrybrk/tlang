@@ -1,19 +1,13 @@
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#ifndef __utils_h__
+#define __utils_h__
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/*
- * Unwrap -
- * It will unwrap pointer, and check for NULL value.
-*/
 void *__unwrap_log__(void*, char*, int, char*);
 #define unwrap(value)	\
 	__unwrap_log__(value, (char*)__FILE__, __LINE__, (char*)__FUNCTION__)
-
-const char *read_file(const char *filename);
 
 /*
  * List -
@@ -59,6 +53,8 @@ void *list_pop(list_T*, ssize_t);
  * it is like pop, but it would not align itself.
 */
 void *list_get(list_T*, ssize_t);
+
+ssize_t list_length(list_T *);
 
 /*
  * list_extend - takes two list, merge listB -> listA;
@@ -125,4 +121,11 @@ void hash_set(hash_T*, const char*, void*);
 */
 void *hash_get(hash_T*, const char*);
 
-#endif // __UTILS_H__
+/*
+ * read_file - takes filename
+ *
+ * It will read file
+*/
+char *read_file(const char *filename);
+
+#endif // __utils_h__

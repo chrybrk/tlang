@@ -11,3 +11,49 @@ primary		-> number | ident
 - SIMD
 - module
 - helpful error and warning
+
+
+-> include
+
+inc "file"
+
+-> extern
+
+extn fn ID(arg: type, ...): ret_type;
+
+-> struct
+
+struct {
+	ID: type;
+	.
+	.
+	.
+} ID;
+
+-> data type (typedef)
+
+dtype new_type = old_type;
+
+-> function
+
+fn ID(arg: type, ...): ret_type {
+
+}
+
+-> var
+
+let ID: type = value;
+
+-> if
+
+if (cond) {
+
+}
+
+-> call
+
+ID(...);
+
+-> return
+
+ret EXPR;

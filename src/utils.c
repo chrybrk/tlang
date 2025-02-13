@@ -1,4 +1,4 @@
-#include "include/utils.h"
+#include "utils.h"
 
 void *__unwrap_log__(void *value, char *file, int line, char *function)
 {
@@ -9,31 +9,6 @@ void *__unwrap_log__(void *value, char *file, int line, char *function)
 	}
 	
 	return value;
-}
-
-const char *read_file(const char *filename)
-{
-	FILE* file = fopen(filename, "rb");
-	if (file == NULL)
-	{
-		perror("could not open file -> ");
-		return NULL;
-	}
-
-	ssize_t len;
-
-	fseek(file, 0L, SEEK_END);
-	len = ftell(file);
-	fseek(file, 0L, SEEK_SET);
-
-	char *buffer = calloc(1, sizeof(char) * len);
-	fread(buffer, sizeof(char), len, file);
-
-	fclose(file);
-
-	buffer[len - 1] = '\0';
-
-	return buffer;
 }
 
 typedef struct LIST_STRUCT
@@ -92,6 +67,11 @@ void *list_pop(list_T *list, ssize_t index)
 void *list_get(list_T *list, ssize_t index)
 {
 	return index < list->index ? list->buffer[index] : NULL;
+}
+
+ssize_t list_length(list_T *list)
+{
+	return list->index;
 }
 
 void list_extend(list_T *listA, list_T *listB)
@@ -215,4 +195,29 @@ void* hash_get(hash_T *hash, const char *key)
 const char **hash_bucket(hash_T *hash)
 {
 	return (const char**)hash->keys;
+}
+
+char *read_file(const char *filename)
+{
+	FILE* file = fopen(filename, "rb");
+	if (file == NULL)
+	{
+		perror("could not open file -> ");
+		return NULL;
+	}
+
+	ssize_t len;
+
+	fseek(file, 0L, SEEK_END);
+	len = ftell(file);
+	fseek(file, 0L, SEEK_SET);
+
+	char *buffer = calloc(1, sizeof(char) * len);
+	fread(buffer, sizeof(char), len, file);
+
+	fclose(file);
+
+	buffer[len - 1] = '\0';
+
+	return buffer;
 }

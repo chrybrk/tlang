@@ -1,37 +1,38 @@
 #include <stdio.h>
-#include <string.h>
-#include "include/global.h"
-#include "include/lexer.h"
-#include "include/parser.h"
-#include "include/helper.h"
-#include "include/utils.h"
+#include "lex.h"
+#include "parser.h"
+#include "glob.h"
 
-const char *filename;
-hash_T *symbols;
+hash_T *symb_table;
 
-// TODO: generate proper errors
-// TODO: assign variables, and re-assign when asked for.
-
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
-	if (argc < 2) printf("tlang: no input file.\n"), exit(0);
+	if (argc < 2)
+	{
+		fprintf(stderr, "no file.\n");
+		return -1;
+	}
 
-	filename = argv[1];
-	symbols = init_hash();
+	symb_table = init_hash();
 
-	const char *source = read_file(filename);
+	lexer_T *lexer = init_lexer(argv[1]);
+	list_T *tokens = lexer_get_tokens(lexer);
 
-	lexer_T *lexer = init_lexer(source);
+	printf("\n\n--------------------------\n\n");
 
-	token_T *tok;
-	while ((tok = next_token(lexer))->type != TT_EOF)
-		print_token(tok);
+	for (ssize_t i = 0; i < list_length(tokens); ++i)
+	{
+		token_T *token = list_get(tokens, i);
+		printf("Token(%s, %s)\n", token_to_string(token->type), token->value);
+	}
 
-	/*
-	parser_T *parser = init_parser(lexer);
-	ast_T *root = parser_parse(parser);
-	print_ast_as_tree(root, 0);
-	*/
+	printf("\n\n--------------------------\n\n");
+
+	parser_T *parser = init_parser(tokens);
+	ast_T *root = parser_parse_program(parser);
+	pretty_ast_tree(root, 0);
+
+	printf("\n\n--------------------------\n\n");
 
 	return 0;
 }
