@@ -1,23 +1,8 @@
 #include "parser.h"
 
-ast_T *init_ast(ast_type_T type, token_T *token, ast_T *left, ast_T *mid, ast_T *right)
-{
-	ast_T *ast = malloc(sizeof(struct AST_STRUCT));
-	if (!ast)
-	{
-		printf("err :: init_ast :: failed to allocate memory.\n");
-		return NULL;
-	}
-	ast->type = type;
-	ast->token = token;
-	ast->data_type = dnil;
-	ast->left = left;
-	ast->mid = mid;
-	ast->right = right;
-	return ast;
-}
-
-ast_T *init_ast_dt(ast_type_T type, token_T *token, data_type_T data_type, ast_T *left, ast_T *mid, ast_T *right)
+ast_T *init_ast(
+	ast_type_T type, data_type_T data_type, token_T *token,
+	ast_T *left, ast_T *mid, ast_T *right, size_t index)
 {
 	ast_T *ast = malloc(sizeof(struct AST_STRUCT));
 	if (!ast)
@@ -31,52 +16,18 @@ ast_T *init_ast_dt(ast_type_T type, token_T *token, data_type_T data_type, ast_T
 	ast->left = left;
 	ast->mid = mid;
 	ast->right = right;
+	ast->index = index;
 	return ast;
 }
 
-ast_T *init_ast_jt(ast_type_T type)
+ast_T *init_ast_leaf(ast_type_T type, data_type_T data_type, token_T *token, size_t index)
 {
-	return init_ast(type, NULL, NULL, NULL, NULL);
+	return init_ast(type, data_type, token, NULL, NULL, NULL, index);
 }
 
-ast_T *init_ast_tt(ast_type_T type, token_T *token)
+ast_T *init_ast_unary(ast_type_T type, data_type_T data_type, token_T *token, ast_T *left, size_t index)
 {
-	return init_ast(type, token, NULL, NULL, NULL);
-}
-
-ast_T *init_ast_l(ast_type_T type, token_T *token, ast_T *left)
-{
-	return init_ast(type, token, left, NULL, NULL);
-}
-
-ast_T *init_ast_lr(ast_type_T type, token_T *token, ast_T *left, ast_T *right)
-{
-	return init_ast(type, token, left, NULL, right);
-}
-
-ast_T *init_ast_m(ast_type_T type, token_T *token, ast_T *mid)
-{
-	return init_ast(type, token, NULL, mid, NULL);
-}
-
-ast_T *init_ast_tt_dt(ast_type_T type, token_T *token, data_type_T data_type)
-{
-	return init_ast_dt(type, token, data_type, NULL, NULL, NULL);
-}
-
-ast_T *init_ast_l_dt(ast_type_T type, token_T *token, data_type_T data_type, ast_T *left)
-{
-	return init_ast_dt(type, token, data_type, left, NULL, NULL);
-}
-
-ast_T *init_ast_lr_dt(ast_type_T type, token_T *token, data_type_T data_type, ast_T *left, ast_T *right)
-{
-	return init_ast_dt(type, token, data_type, left, NULL, right);
-}
-
-ast_T *init_ast_m_dt(ast_type_T type, token_T *token, data_type_T data_type, ast_T *mid)
-{
-	return init_ast_dt(type, token, data_type, NULL, mid, NULL);
+	return init_ast(type, data_type, token, left, NULL, NULL, index);
 }
 
 const char *ast_type_as_string(ast_type_T type)
@@ -85,74 +36,21 @@ const char *ast_type_as_string(ast_type_T type)
 
 	switch (type)
 	{
-		case ast_program: v = "ast_program"; break;
-		case ast_statement: v = "ast_statement"; break;
-		case ast_expr: v = "ast_expr"; break;
-		case ast_term: v = "ast_term"; break;
-		case ast_return: v = "ast_return"; break;
-		case ast_var: v = "ast_var"; break;
-		case ast_assign: v = "ast_assign"; break;
-		case ast_data_type: v = "ast_data_type"; break;
-		case ast_class_type: v = "ast_class_type"; break;
-		case ast_class_call: v = "ast_class_call"; break;
-		case ast_function: v = "ast_function"; break;
-		case ast_call: v = "ast_call"; break;
-		case ast_ident: v = "ast_ident"; break;
+		case ast_add: v = "ast_add"; break;
+		case ast_sub: v = "ast_sub"; break;
+		case ast_mul: v = "ast_mul"; break;
+		case ast_div: v = "ast_div"; break;
 		case ast_const: v = "ast_const"; break;
+		case ast_ident: v = "ast_ident"; break;
+		case ast_assign: v = "ast_assign"; break;
+		case ast_function: v = "ast_function"; break;
+		case ast_return: v = "ast_return"; break;
+		case ast_at_asm: v = "ast_at_asm"; break;
 		case ast_join: v = "ast_join"; break;
 		case ast_noop: v = "ast_noop"; break;
 	}
 	
 	return v;
-}
-
-const char *data_type_to_string(data_type_T dt)
-{
-	char *t;
-
-	switch (dt)
-	{
-		case db: t = "db"; break;
-		case dh: t = "dh"; break;
-		case dw: t = "dw"; break;
-		case dl: t = "dl"; break;
-		case ds: t = "ds"; break;
-		case dd: t = "dd"; break;
-		case dp: t = "dp"; break;
-		case dnil: t = "dnil"; break;
-	}
-
-	return t;
-}
-
-data_type_T tt_dt_to_ast_dt(token_type_T tt_dt)
-{
-	switch (tt_dt)
-	{
-		case tt_const_int:
-		case tt_i32:
-		case tt_u32:
-			return dw;
-		case tt_i64:
-		case tt_u64:
-			return dl;
-		case tt_const_float:
-		case tt_f32:
-			return ds;
-		case tt_f64:
-			return dd;
-		case tt_i8:
-		case tt_char:
-			return db;
-		case tt_i16:
-		case tt_u16:
-			return dh;
-		case tt_str:
-		case tt_string:
-		case tt_ptr:
-			return dp;
-		default: return dnil;
-	}
 }
 
 void pretty_ast_tree(ast_T *root, int level)
@@ -169,7 +67,7 @@ void pretty_ast_tree(ast_T *root, int level)
 	if (root->token)
 		printf("%s - (%s: %s = %s)",
 				type,
-				token_to_string(root->token->type),
+				token_type_to_string(root->token->type),
 				root->token->value,
 				data_type_to_string(root->data_type));
 	else printf("AST(%s)", type);
@@ -224,432 +122,205 @@ token_T *parser_eat(parser_T *parser, token_type_T token_type)
 	{
 		// TODO: proper error management
 		printf("err :: expected `%s`, got `%s`.\n",
-			token_to_string(token_type), token_to_string(parser->token->type)
+			token_type_to_string(token_type), token_type_to_string(parser->token->type)
 		);
 	}
 
 	return token;
 }
 
-ast_T *parser_parse_call(parser_T *parser)
+int get_token_prec(token_T *token)
 {
-	// f(args, ...)
-	
-	token_T *id = parser_eat(parser, tt_ident);
-	parser_eat(parser, tt_lparan);
-
-	// then we need to consume arguments
-
-	ast_T *left = NULL;
-	while (parser->token->type != tt_eof && parser->token->type != tt_rparan)
+	switch (token->type)
 	{
-		if (parser->token->type == tt_comma)
-			parser_eat(parser, tt_comma);
-
-		left = init_ast_lr(ast_join, NULL, left, parser_parse_expr(parser));
+		case tt_plus:
+		case tt_minus: return 1;
+		case tt_star:
+		case tt_fslash: return 2;
+		default: printf("err:: uhh get_token_prec, something?!\n"); return 0;
 	}
-	parser_eat(parser, tt_rparan);
-
-	return left ? init_ast_l(ast_call, id, left) : init_ast_tt(ast_call, id);
 }
 
-ast_T *parser_parse_factor(parser_T *parser)
+ast_type_T convert_token_type_to_ast_type(token_T *token)
+{
+	switch (token->type)
+	{
+		case tt_plus: return ast_add;
+		case tt_minus: return ast_sub;
+		case tt_star: return ast_mul;
+		case tt_fslash: return ast_div;
+		default: printf("err :: what operations are you doing? bruh...\n"); return ast_noop;
+	}
+}
+
+ast_T *parser_parse_primary(parser_T *parser)
 {
 	switch (parser->token->type)
 	{
-		case tt_lparan:
-		{
-			parser_eat(parser, tt_lparan);
-			ast_T *ast = parser_parse_expr(parser);
-			parser_eat(parser, tt_rparan);
-
-			return ast;
-		}
 		case tt_const_int:
-			return init_ast_tt_dt(ast_const, parser_eat(parser, tt_const_int), dw);
-		case tt_const_float:
-			return init_ast_tt_dt(ast_const, parser_eat(parser, tt_const_float), ds);
+			return init_ast_leaf(ast_const, dnil, parser_eat(parser, tt_unknown_token), 0);
 		case tt_string:
-			return init_ast_tt_dt(ast_const, parser_eat(parser, tt_string), dp);
+			return init_ast_leaf(ast_const, dstr, parser_eat(parser, tt_string), 0);
 		case tt_ident:
 		{
-			// depending on the current token:
-			// it might be one of two things,
-			// either v::f() or f()
-			// if current token is not
-			// tt_dcolon or tt_lparan
-			// then, ast will be ident.
-
-			if (parser_token_peek(parser, 1)->type == tt_dcolon)
+			token_T *ident = parser_eat(parser, tt_ident);
+			trie_value_T sv = trie_find(symbol_trie_map, ident->value);
+			if (!sv.is_value)
 			{
-				// class function call
-
-				token_T *id = parser_eat(parser, tt_ident);
-				parser_eat(parser, tt_dcolon);
-
-				ast_T *ast = init_ast_l(ast_class_call, id, parser_parse_call(parser));
-				
-				return ast;
-			}
-			else if (parser_token_peek(parser, 1)->type == tt_lparan)
-				return parser_parse_call(parser);
-
-			token_T *id = parser_eat(parser, tt_ident);
-			symb_table_T *vh = hash_get(symb_table, id->value);
-
-			if (!vh)
-			{
-				printf("err :: variable `%s` not defined.\n", id->value);
-				return init_ast_jt(ast_noop);
+				printf("err :: variable `%s` is not defined.\n", ident->value);
+				return NULL;
 			}
 
-			return init_ast_tt_dt(ast_ident, id, vh->data_type);
+			return init_ast_leaf(ast_ident, SYMBOLS[sv.value.i32].data_type, ident, sv.value.i32);
 		}
-		default: return NULL;
+		default:
+		{
+			printf("err :: no primary found.\n");
+			parser_eat(parser, tt_unknown_token);
+			return NULL;
+		}
 	}
 }
 
-ast_T *parser_parse_term(parser_T *parser)
+ast_T *parser_parse_expr(parser_T *parser, int tok_prec)
 {
-	ast_T *left = parser_parse_factor(parser);
+	ast_T *left = NULL;
 
-	token_T *token;
-	while ( (token = parser_token_peek(parser, 0)) && (token->type == tt_star ||
-			 token->type == tt_fslash ||
-			 token->type == tt_mod))
+	if (parser->token->type == tt_lparan)
 	{
-		token = parser_eat(parser, tt_unknown_token);
+		parser_eat(parser, tt_lparan);
+		left = parser_parse_expr(parser, 0);
+		parser_eat(parser, tt_rparan);
+	}
+	else left = parser_parse_primary(parser);
 
-		ast_T *right = parser_parse_factor(parser);
+	token_T *token = parser->token;
 
-		if (!right)
-		{
-			// TODO: proper error management
-			printf("err :: expected `factor` after `*, /, %%`.\n");
+	if (token->type == tt_semi || token->type == tt_rparan)
+		return left;
 
-			return NULL;
-		}
+	while (get_token_prec(token) > tok_prec)
+	{
+		parser_eat(parser, tt_unknown_token);
 
-		if (left->data_type != right->data_type)
-		{
-			printf("err :: `%s` & `%s` are not same type.\n",
-					data_type_to_string(left->data_type),
-					data_type_to_string(right->data_type)
-					);
-			return NULL;
-		}
-		
-		if (left->data_type == dp || right->data_type == dp)
-		{
-			printf("err :: cannot perform math operation on pointer.\n");
-			return NULL;
-		}
+		ast_T *right = parser_parse_expr(parser, get_token_prec(token));
 
-		left = init_ast_lr_dt(ast_term, token, left->data_type, left, right);
+		data_type_T new_type =
+			type_check(convert_token_type_to_ast_type(token),
+			left->data_type, right->data_type);
+
+		left =
+			init_ast(convert_token_type_to_ast_type(token),
+			new_type, token, left, NULL, right, 0);
+
+		token = parser->token;
+		if (token->type == tt_semi || token->type == tt_rparan)
+			return left;
 	}
 
 	return left;
 }
 
-ast_T *parser_parse_expr(parser_T *parser)
+ast_T *parser_parse_assign(parser_T *parser)
 {
-	ast_T *left = parser_parse_term(parser);
-
-	token_T *token;
-	while ((token = parser_token_peek(parser, 0)) && (token->type == tt_plus || token->type == tt_minus))
-	{
-		token = parser_eat(parser, tt_unknown_token);
-
-		ast_T *right = parser_parse_term(parser);
-
-		if (!right)
-		{
-			// TODO: proper error management
-			printf("err :: expected `term` after `+, -`.\n");
-
-			return NULL;
-		}
-
-		if (left->data_type != right->data_type)
-		{
-			printf("err :: `%s` & `%s` are not same type.\n",
-					data_type_to_string(left->data_type),
-					data_type_to_string(right->data_type)
-					);
-			return NULL;
-		}
-		
-		if (left->data_type == dp || right->data_type == dp)
-		{
-			printf("err :: cannot perform math operation on pointer.\n");
-			return NULL;
-		}
-
-		left = init_ast_lr_dt(ast_expr, token, left->data_type, left, right);
-	}
-
-	return left;
-}
-
-ast_T *parser_parse_data_type(parser_T *parser)
-{
-	// so variable data can be described into two parts:
-	// i32, i16, char, str... simple things.
-	// then, we have...
-	// class_name<types, ...> more complex thing 
-	
-	ast_T *ast = NULL;
-
-	token_T *vt = parser_eat(parser, tt_unknown_token);
-	switch (vt->type)
-	{
-		case tt_void:
-		{
-			// because return type will have another function,
-			// so void would not go with variable or other things.
-			printf("err :: `void` can only be part of return type.\n");
-
-			return NULL;
-		}
-		case tt_char:
-		case tt_str:
-		case tt_i8:
-		case tt_i16:
-		case tt_i32:
-		case tt_i64:
-		case tt_u8:
-		case tt_u16:
-		case tt_u32:
-		case tt_u64:
-		case tt_f32:
-		case tt_f64:
-		case tt_ptr:
-			ast = init_ast_tt_dt(ast_data_type, vt, tt_dt_to_ast_dt(vt->type));
-			break;
-
-		default:
-		{
-			// if it is not generic type
-			// and current token is `<` then
-			// it must be those complex type.
-
-			if (parser->token->type == tt_lt)
-			{
-				parser_eat(parser, tt_lt);
-
-				ast = init_ast_l(ast_class_type, vt, parser_parse_data_type(parser));
-
-				while (parser->token->type != tt_gt && parser->token->type != tt_eof)
-				{
-					parser_eat(parser, tt_comma);
-					ast->left = init_ast_lr(ast_join, NULL, ast->left, parser_parse_data_type(parser));
-				}
-
-				parser_eat(parser, tt_gt);
-			}
-		}
-	}
-
-	return ast;
-}
-
-ast_T *parser_parse_return_type(parser_T *parser)
-{
-	ast_T *ast = NULL;
-
-	token_T *vt = parser_eat(parser, tt_unknown_token);
-	switch (vt->type)
-	{
-		case tt_void:
-		case tt_char:
-		case tt_str:
-		case tt_i8:
-		case tt_i16:
-		case tt_i32:
-		case tt_i64:
-		case tt_u8:
-		case tt_u16:
-		case tt_u32:
-		case tt_u64:
-		case tt_f32:
-		case tt_f64:
-		case tt_ptr:
-			ast = init_ast_tt_dt(ast_data_type, vt, tt_dt_to_ast_dt(vt->type));
-			break;
-
-		default:
-		{
-			// if it is not generic type
-			// and current token is `<` then
-			// it must be those complex type.
-
-			if (parser->token->type == tt_lt)
-			{
-				parser_eat(parser, tt_lt);
-
-				ast = init_ast_l(ast_class_type, vt, parser_parse_data_type(parser));
-
-				while (parser->token->type != tt_gt && parser->token->type != tt_eof)
-				{
-					parser_eat(parser, tt_comma);
-					ast->left = init_ast_lr(ast_join, NULL, ast->left, parser_parse_data_type(parser));
-				}
-
-				parser_eat(parser, tt_gt);
-			}
-		}
-	}
-
-	return ast;
-}
-
-ast_T *parser_parse_variable(parser_T *parser)
-{
-	/*
-	 * var_name: type = expr;
-	*/
 	token_T *var_name = parser_eat(parser, tt_ident);
+	ast_T *ast = init_ast_leaf(ast_assign, dnil, var_name, 0);
 
-	parser_eat(parser, tt_colon);
-
-	// data type can be complex.
-	ast_T *data_type = parser_parse_data_type(parser);
-
-	symb_table_T *vh = hash_get(symb_table, var_name->value);
-	if (vh)
-		printf("err :: variable `%s` already defined.\n", var_name->value);
-	else
+	if (parser->token->type == tt_colon)
 	{
-		vh = malloc(sizeof(symb_table_T));
-		vh->data_type = data_type->data_type;
-		vh->symb_kind = VAR;
+		parser_eat(parser, tt_colon);
 
-		hash_set(symb_table, var_name->value, vh);
+		token_T *var_type = parser_eat(parser, tt_unknown_token);
+		data_type_T data_type = token_type_to_data_type(var_type->type);
+		if (data_type == dvoid)
+		{
+			printf("err :: well you cannot put void in variable.\n");
+			return NULL;
+		}
+
+		trie_value_T sv = trie_find(symbol_trie_map, var_name->value);
+		if (sv.is_value)
+		{
+			printf("err :: variable `%s` already defined.\n", var_name->value);
+			return NULL;
+		}
+
+		symbol_T symbol = { 0 };
+		symbol.symb_s = SVAR;
+		symbol.symb_c = CGLOBAL;
+		symbol.name = malloc(strlen(var_name->value) + 1);
+		symbol.name = strdup(var_name->value);
+		symbol.data_type = data_type;
+
+		size_t slot = init_glob_symb(symbol);
+		ast->index = slot;
+		ast->data_type = data_type;
+
+		trie_insert(symbol_trie_map, var_name->value, (trie_value_T){ .value.i32 = slot });
+
+		if (parser->token->type == tt_semi)
+			return ast;
 	}
 
-	if (parser->token->type != tt_assign)
-		return init_ast_l_dt(ast_var, var_name, data_type->data_type, data_type);
-
-	parser_eat(parser, tt_assign);
-
-	ast_T *expr = parser_parse_expr(parser);
-
-	if (!expr)
-		return init_ast_l_dt(ast_var, var_name, data_type->data_type, data_type);
-
-	if ((data_type->data_type == dp && expr->data_type != dp) ||
-			(data_type->data_type != dp && expr->data_type == dp))
+	trie_value_T sv = trie_find(symbol_trie_map, var_name->value);
+	if (!sv.is_value)
 	{
-		printf("err :: pointer need pointer on the other side.\n");
+		printf("err :: variable `%s` not defined.\n", var_name->value);
 		return NULL;
 	}
 
-	return init_ast_lr_dt(ast_var, var_name, data_type->data_type, data_type, expr);
-}
-
-ast_T *parser_parse_assignment(parser_T *parser)
-{
-	token_T *var_name = parser_eat(parser, tt_ident);
 	parser_eat(parser, tt_assign);
 
-	symb_table_T *vh = hash_get(symb_table, var_name->value);
-	if (!vh)
-		printf("err :: variable `%s` not defined.\n", var_name->value);
+	ast->left = parser_parse_expr(parser, 0);
+	ast->data_type = type_check(ast->type, ast->data_type, ast->left->data_type);
 
-	ast_T *expr = parser_parse_expr(parser);
+	SYMBOLS[sv.value.i32].data_type = ast->data_type;
 
-	return init_ast_l(ast_assign, var_name, expr);
+	return ast;
 }
 
-ast_T *parser_parse_function(parser_T *parser)
+ast_T *parser_parse_ident(parser_T *parser)
 {
-	/*
-	 * fn_name -> (arg: ...): i32 {
-	 * 		compound_stmnt
-	 * }
-	*/
+	token_T *token = parser_token_peek(parser, 1);
 
-	token_T *fn_name = parser_eat(parser, tt_ident);
-
-	parser_eat(parser, tt_right_arrow);
-	parser_eat(parser, tt_lparan);
-
-	ast_T *args = NULL;
-
-	// parse arguments
-	while (parser->token->type != tt_rparan)
+	switch (token->type)
 	{
-		token_T *arg_name = parser_eat(parser, tt_ident);
-		parser_eat(parser, tt_colon);
-		ast_T *arg_dt = parser_parse_data_type(parser);
-
-		args = init_ast_lr_dt(ast_join, arg_name, arg_dt->data_type, args, arg_dt);
-
-		if (parser->token->type != tt_rparan)
-			parser_eat(parser, tt_comma);
+		case tt_colon:
+		case tt_assign:
+			return parser_parse_assign(parser);
+		default:
+			printf("err :: well, something is wrong in ident matcher.\n");
+			parser_eat(parser, tt_unknown_token);
+			return NULL;
 	}
-
-	parser_eat(parser, tt_rparan);
-	parser_eat(parser, tt_colon);
-
-	// return type are similar to data type,
-	// but they have void.
-	ast_T *ret_type = parser_parse_return_type(parser);
-
-	ast_T *compound_stmnt = parser_parse_compound_statement(parser);
-
-	return init_ast_dt(ast_function, fn_name, ret_type->data_type, args, ret_type, compound_stmnt);
 }
 
-ast_T *parser_parse_return(parser_T *parser)
+ast_T *parser_parse_at_statement(parser_T *parser)
 {
-	parser_eat(parser, tt_return);
+	parser_eat(parser, tt_at);
+	token_T *kind_of_at = parser_eat(parser, tt_ident);
+	ast_T *ast = NULL;
 
-	ast_T *expr = parser_parse_expr(parser);
-	ast_T *ret = init_ast_l_dt(ast_return, NULL, expr->data_type, expr);
+	parser_eat(parser, tt_lparan);
+	if (!strcmp(kind_of_at->value, "asm"))
+		ast = init_ast_leaf(ast_at_asm, dnil, parser_eat(parser, tt_string), 0);
+	parser_eat(parser, tt_rparan);
 
-	return ret;
+	return ast;
 }
 
 ast_T *parser_parse_statement(parser_T *parser)
 {
+	ast_T *left = NULL;
+
 	switch (parser->token->type)
 	{
-		case tt_return:
-		{
-			ast_T *ast = parser_parse_return(parser);
-			parser_eat(parser, tt_semi);
-			return ast;
-		}
-		case tt_ident:
-		{
-			switch (parser_token_peek(parser, 1)->type)
-			{
-				case tt_colon:
-				{
-					ast_T *ast = parser_parse_variable(parser);
-					parser_eat(parser, tt_semi);
-					return ast;
-				}
-				case tt_right_arrow: return parser_parse_function(parser);
-				case tt_assign:
-				{
-					ast_T *ast = parser_parse_assignment(parser);
-					parser_eat(parser, tt_semi);
-					return ast;
-				}
-				default: ;
-			}
-		}
-		// if none of the cases match,
-		// then it must be an expr.
-		default:
-		{
-			ast_T *ast = parser_parse_expr(parser);
-			parser_eat(parser, tt_semi);
-			return ast;
-		}
+		case tt_ident: left = parser_parse_ident(parser); break;
+		case tt_at: left = parser_parse_at_statement(parser); break;
+		default: left = parser_parse_expr(parser, 0);
 	}
+
+	return left;
 }
 
 ast_T *parser_parse_compound_statement(parser_T *parser)
@@ -661,15 +332,19 @@ ast_T *parser_parse_compound_statement(parser_T *parser)
 
 	while (parser->token->type != tt_rbrace)
 	{
-		tree = 
-			parser->token->type == tt_lbrace ?
-			parser_parse_compound_statement(parser) :
-			parser_parse_statement(parser);
+		switch (parser->token->type)
+		{
+			case tt_lbrace: tree = parser_parse_compound_statement(parser); break;
+			default: tree = parser_parse_statement(parser);
+		}
+
+		if (parser->token->type == tt_semi)
+			parser_eat(parser, tt_semi);
 
 		if (tree)
 		{
 			if (!left) left = tree;
-			else left = init_ast_lr(ast_join, NULL, left, tree);
+			else left = init_ast(ast_join, dnil, NULL, left, NULL, tree, 0);
 		}
 	}
 
@@ -678,7 +353,7 @@ ast_T *parser_parse_compound_statement(parser_T *parser)
 	return left;
 }
 
-ast_T *parser_parse_program(parser_T *parser)
+ast_T *parser_parse(parser_T *parser)
 {
 	// this will contain first statement
 	ast_T *tree;
@@ -686,21 +361,25 @@ ast_T *parser_parse_program(parser_T *parser)
 
 	while (parser->token->type != tt_eof)
 	{
-		tree = 
-			parser->token->type == tt_lbrace ?
-			parser_parse_compound_statement(parser) :
-			parser_parse_statement(parser);
+		switch (parser->token->type)
+		{
+			case tt_lbrace: tree = parser_parse_compound_statement(parser); break;
+			default: tree = parser_parse_statement(parser);
+		}
+
+		if (parser->token->type == tt_semi)
+			parser_eat(parser, tt_semi);
 
 		if (tree)
 		{
 			if (!left) left = tree;
-			else left = init_ast_lr(ast_join, NULL, left, tree);
+			else left = init_ast(ast_join, dnil, NULL, left, NULL, tree, 0);
 		}
 	}
 
 	left =
 		// it means the program is empty file.
-		!left ? init_ast_l(ast_noop, NULL, left) :
+		!left ? init_ast_unary(ast_noop, dnil, NULL, left, 0) :
 
 		// it means it is not.
 		left;

@@ -18,7 +18,7 @@ void build_start(int argc, char **argv)
 	const char *src_files = strconvCAtoCC(src_files_array, ' ');
 	array_free(src_files_array);
 
-	command_execute(
+	bool suc = command_execute(
 			formate_string(
 				"gcc -I%s %s -o %s%s",
 				PROJECT_INCLUDE,

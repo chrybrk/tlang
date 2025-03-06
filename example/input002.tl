@@ -1,4 +1,15 @@
-main -> (argc: i32, argv: ptr): i32 {
-	x: str = "hello";
-	return x;
-}
+z: i32 = 0;
+@asm("mov edi, 'r'");
+@asm("call putchar");
+@asm("mov edi, 'a'");
+@asm("call putchar");
+@asm("mov edi, 'h'");
+@asm("call putchar");
+@asm("mov edi, 'u'");
+@asm("call putchar");
+@asm("mov edi, 'l'");
+@asm("call putchar");
+@asm("mov edi, 10");
+@asm("call putchar");
+@asm("mov edi, [z]");
+@asm("call exit");
